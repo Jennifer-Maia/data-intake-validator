@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Intake Validator — slides da live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#081a3a; --bg-deep:#040f26;
+  --ink:#eef5ff; --ink-2:#a9c3ea; --ink-3:#6f8fc2;
+  --b1:#0058dc; --b2:#007cfc; --c1:#00c4f4; --c2:#10d4fc;
+  /* quem resolve cada etapa: a mesma cor em todos os slides */
+  --code:#a9c3ea; --jev:#10d4fc; --llm:#ffb547; --human:#c4a6ff;
+  --line:rgba(169,195,234,.22);
+  --panel:rgba(4,15,38,.62);
+  --display:'Bricolage Grotesque','Inter',system-ui,-apple-system,sans-serif;
+  --body:'IBM Plex Sans','Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'IBM Plex Mono','SFMono-Regular',Consolas,'Liberation Mono',monospace;
+  --slant:polygon(22px 0,100% 0,calc(100% - 22px) 100%,0 100%);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-font-smoothing:antialiased}
+.viewport{position:fixed;inset:0;background:var(--bg)}
+.stage{
+  width:1920px;height:1080px;position:absolute;left:50%;top:50%;transform-origin:50% 50%;overflow:hidden;
+  background:
+    radial-gradient(1100px 760px at 88% -6%, rgba(0,124,252,.30), transparent 62%),
+    radial-gradient(900px 640px at -6% 106%, rgba(16,212,252,.14), transparent 62%),
+    var(--bg);
+}
+.slide{position:absolute;inset:0;padding:144px 160px 150px;opacity:0;visibility:hidden;transition:opacity .3s ease}
+.slide.active{opacity:1;visibility:visible}
+.slide.active > *:not(.shape):not(.note){animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+.slide.active > *:nth-child(2){animation-delay:.07s}
+.slide.active > *:nth-child(3){animation-delay:.14s}
+.slide.active > *:nth-child(4){animation-delay:.21s}
+.slide.active > *:nth-child(n+5){animation-delay:.28s}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.slide{transition:none}.slide.active > *{animation:none !important}}
+
+/* type */
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.02em;line-height:1.02;font-variation-settings:'opsz' 96}
+h1{font-size:128px;font-weight:700}
+h2{font-size:64px;font-weight:700;max-width:1500px;line-height:1.06}
+h3{font-size:36px;font-weight:600;line-height:1.15}
+p{margin:0;font-size:30px;line-height:1.4;color:var(--ink-2)}
+.lead{font-size:34px;line-height:1.35;color:var(--ink);max-width:1300px}
+strong{color:var(--ink);font-weight:600}
+.mono{font-family:var(--mono)}
+.kicker{font-family:var(--mono);font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:var(--c2);margin-bottom:18px}
+.footnote{position:absolute;left:160px;right:160px;bottom:112px;font-size:21px;color:var(--ink-3);line-height:1.35}
+.c-code{color:var(--code)} .c-jev{color:var(--jev)} .c-llm{color:var(--llm)} .c-human{color:var(--human)}
+
+/* brand + hud */
+.brand{display:flex;align-items:center;gap:18px;font-family:var(--display);font-weight:600;font-size:26px;color:var(--ink-2);letter-spacing:-.01em}
+.brand img{width:44px;height:44px;display:block}
+.brand.big{font-size:30px;gap:20px;color:var(--ink)}
+.brand.big img{width:58px;height:58px}
+.stage-brand{position:absolute;left:160px;top:54px}
+.stage.no-brand .stage-brand,.stage.no-brand .hud{display:none}
+.hud{position:absolute;left:160px;right:160px;bottom:52px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:20px;color:var(--ink-3)}
+.progress{position:absolute;left:0;bottom:0;height:6px;width:0;background:linear-gradient(90deg,var(--b1),var(--c2));transition:width .3s ease}
+.shape{position:absolute;background:linear-gradient(160deg,var(--b1) 0%,var(--b2) 45%,var(--c2) 100%);clip-path:polygon(40% 0,100% 0,60% 100%,0 100%)}
+
+/* 01 apresentação */
+.intro .shape{left:-210px;top:-120px;width:820px;height:1320px}
+.who{position:relative;display:grid;grid-template-columns:520px 1fr;gap:110px;align-items:center;height:100%}
+.photo{width:520px;height:520px;border-radius:50%;padding:10px;background:linear-gradient(140deg,#fff,var(--c2));box-shadow:0 40px 90px rgba(4,15,38,.6)}
+.photo img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.who .kicker{margin:54px 0 16px}
+.who h1{font-size:108px;line-height:.98}
+.who .role{margin-top:26px;font-size:32px;color:var(--ink)}
+.who .role span{font-family:var(--mono);font-size:24px;color:var(--ink-3);margin-left:18px}
+.talk{margin-top:54px;padding:30px 44px 32px;background:var(--panel);clip-path:var(--slant);max-width:860px}
+.talk small{display:block;font-family:var(--mono);font-size:20px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.talk b{display:block;font-family:var(--display);font-size:50px;font-weight:700;letter-spacing:-.02em;line-height:1.05;color:var(--ink);margin-top:10px}
+.talk p{margin-top:12px;font-size:27px}
+.hint{position:absolute;right:160px;bottom:52px;font-size:20px;color:var(--ink-3);font-family:var(--mono)}
+
+/* centro: frases grandes */
+.center{display:flex;flex-direction:column;justify-content:center;align-items:flex-start}
+.center h1{font-size:118px;max-width:1560px;line-height:1.0}
+.center .lead{margin-top:44px;max-width:1250px;font-size:40px}
+.center .lead strong{color:var(--c2)}
+
+/* imagem + texto */
+.hero2{display:grid;grid-template-columns:auto 1fr;gap:96px;align-items:center;height:100%}
+figure{margin:0}
+figure img{display:block;width:100%;height:auto;border-radius:10px}
+figcaption{margin-top:14px;font-family:var(--mono);font-size:18px;color:var(--ink-3)}
+.polaroid{width:720px;transform:rotate(-2deg)}
+.polaroid img{border:12px solid #f4f1ea;border-radius:4px;box-shadow:0 36px 80px rgba(4,15,38,.6)}
+.framed img{border:1px solid var(--line)}
+.hero2 h2{font-size:68px}
+.hero2 .lead{margin-top:36px;font-size:36px;max-width:none}
+
+/* 99 / 1 */
+.ratio{display:flex;gap:8px;margin-top:84px;height:210px}
+.ratio .m{flex:99;background:linear-gradient(90deg,var(--b1),var(--b2) 55%,var(--c2));clip-path:polygon(22px 0,100% 0,100% 100%,0 100%);display:flex;align-items:center;gap:28px;padding:0 56px}
+.ratio .m b{font-family:var(--display);font-size:160px;font-weight:700;letter-spacing:-.04em;color:#fff;line-height:1}
+.ratio .m span{font-size:44px;color:#fff}
+.ratio .h{flex:1;background:var(--llm)}
+.ratio-legend{display:flex;justify-content:flex-end;margin-top:16px;font-size:32px;color:var(--llm);font-weight:600}
+blockquote{margin:76px 0 0;padding-left:34px;border-left:6px solid var(--c2);font-family:var(--display);font-size:46px;font-weight:500;line-height:1.2;letter-spacing:-.01em;color:var(--ink);max-width:1400px}
+blockquote cite{display:block;margin-top:16px;font-family:var(--mono);font-style:normal;font-size:20px;letter-spacing:0;color:var(--ink-3)}
+
+/* três arquiteturas */
+.arch{display:grid;grid-template-columns:1090px 1fr;gap:64px;margin-top:40px;align-items:center}
+.legend3 div{padding:6px 0 6px 26px;border-left:6px solid;margin-top:34px}
+.legend3 div:first-child{margin-top:0}
+.legend3 b{display:block;font-family:var(--display);font-size:34px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+.legend3 span{display:block;margin-top:8px;font-size:24px;line-height:1.35;color:var(--ink-2)}
+
+/* erro composto */
+.decay{display:grid;grid-template-columns:470px 1fr;gap:80px;margin-top:52px;align-items:end}
+.bigstat b{display:block;font-family:var(--display);font-size:200px;font-weight:700;letter-spacing:-.05em;line-height:.9;color:var(--jev)}
+.bigstat span{display:block;margin-top:22px;font-size:29px;line-height:1.35;color:var(--ink-2)}
+.cols10{display:grid;grid-template-columns:repeat(10,1fr);gap:16px;height:440px;align-items:end;border-bottom:2px solid var(--line)}
+.cols10 div{position:relative;background:rgba(169,195,234,.26)}
+.cols10 div em{position:absolute;left:0;right:0;top:-34px;text-align:center;font-style:normal;font-family:var(--mono);font-size:21px;color:var(--ink-3)}
+.cols10 div.on{background:linear-gradient(180deg,var(--c2),var(--b2))}
+.cols10 div.on em{color:var(--ink);font-size:26px;top:-40px;font-weight:500}
+.axis10{display:grid;grid-template-columns:repeat(10,1fr);gap:16px;margin-top:12px;font-family:var(--mono);font-size:21px;color:var(--ink-3);text-align:center}
+.axis10 .on{color:var(--jev)}
+.axis-title{margin-top:8px;text-align:center;font-size:21px;color:var(--ink-3)}
+
+/* a regra */
+.rules{margin-top:52px}
+.rule{display:grid;grid-template-columns:70px 670px 60px 260px 1fr;align-items:center;gap:28px;padding:44px 0;border-top:1px solid var(--line)}
+.rule .n{font-family:var(--mono);font-size:26px;color:var(--ink-3)}
+.rule .q{font-family:var(--display);font-size:50px;font-weight:600;letter-spacing:-.02em;color:var(--ink);line-height:1.1}
+.rule .why{font-size:28px;line-height:1.35;color:var(--ink-2)}
+.arrow{width:60px;height:36px;flex:none;align-self:center;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300c4f4' stroke-width='2.5'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/36px no-repeat}
+.own{display:flex;align-items:center;justify-content:center;height:86px;font-family:var(--display);font-weight:700;font-size:38px;letter-spacing:-.01em;color:#06203f;background:var(--code);clip-path:polygon(16px 0,100% 0,calc(100% - 16px) 100%,0 100%)}
+.own.jev{background:var(--jev)} .own.llm{background:var(--llm);color:#2a1a00} .own.human{background:var(--human);color:#1d0f3a}
+.rule-foot{display:flex;align-items:center;gap:28px;padding-top:40px;border-top:1px solid var(--line);font-size:31px;color:var(--ink-2)}
+.rule-foot .own{height:62px;font-size:30px;padding:0 36px}
+
+/* fluxo */
+.flow{display:flex;align-items:stretch;margin-top:64px}
+.node{flex:1;min-height:220px;display:flex;flex-direction:column;justify-content:center;padding:26px 44px;background:rgba(169,195,234,.12);clip-path:polygon(26px 0,100% 0,calc(100% - 26px) 100%,0 100%);font-size:33px;line-height:1.2;color:var(--ink);font-weight:500}
+.node span{display:block;margin-top:12px;font-size:24px;font-weight:400;color:var(--ink-2)}
+.node.hot{background:linear-gradient(135deg,var(--b1),var(--b2));color:#fff}
+.node.hot span{color:rgba(255,255,255,.85)}
+.node.cool{background:rgba(16,212,252,.18)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:64px;margin-top:84px}
+.stat b{display:block;white-space:nowrap;font-family:var(--display);font-size:104px;font-weight:700;letter-spacing:-.035em;line-height:1;color:var(--ink)}
+.stat span{display:block;margin-top:16px;font-size:29px;color:var(--ink-2);line-height:1.3}
+
+/* calibração */
+.calib{display:grid;grid-template-columns:840px 1fr;gap:80px;margin-top:64px;align-items:center}
+.meter{margin-top:38px}
+.meter:first-of-type{margin-top:36px}
+.meter .lbl{display:flex;justify-content:space-between;align-items:baseline;font-size:28px;color:var(--ink-2)}
+.meter .lbl b{font-family:var(--mono);font-size:38px;font-weight:500;color:var(--ink)}
+.meter .tr{margin-top:10px;height:30px;background:rgba(169,195,234,.16)}
+.meter .tr i{display:block;height:100%;background:linear-gradient(90deg,var(--b2),var(--c2))}
+
+/* timeline */
+.timeline{position:relative;margin-top:110px;display:grid;grid-template-columns:repeat(6,1fr);gap:26px}
+.timeline::before{content:'';position:absolute;left:12px;right:12px;top:13px;height:3px;background:linear-gradient(90deg,var(--ink-3),var(--b2) 60%,var(--c2))}
+.tl{position:relative;padding-top:56px}
+.tl::before{content:'';position:absolute;top:0;left:0;width:22px;height:22px;background:var(--bg);border:4px solid var(--b2);border-radius:50%}
+.tl.key::before{background:var(--c2);border-color:var(--c2);box-shadow:0 0 0 10px rgba(16,212,252,.18)}
+.tl i{display:block;font-style:normal;font-family:var(--mono);font-size:20px;color:var(--ink-3)}
+.tl b{display:block;font-family:var(--display);font-size:40px;font-weight:600;color:var(--ink);line-height:1.1;margin-top:8px}
+.tl em{display:block;font-style:normal;font-family:var(--display);font-size:104px;font-weight:700;letter-spacing:-.04em;color:var(--c2);line-height:1;margin-top:34px}
+.tl span{display:block;font-size:25px;color:var(--ink-2);margin-top:14px;line-height:1.3}
+
+/* mapa das etapas */
+.map{display:flex;align-items:stretch;margin-top:56px}
+.map .arrow{width:34px;background-size:26px}
+.step{flex:1;padding:28px 24px 36px;background:var(--panel);border-top:8px solid var(--code)}
+.step.jev{border-top-color:var(--jev)} .step.llm{border-top-color:var(--llm)}
+.step i{font-style:normal;font-family:var(--mono);font-size:20px;color:var(--ink-3)}
+.step b{display:block;font-family:var(--mono);font-size:32px;font-weight:500;color:var(--ink);margin-top:8px}
+.step .tag{display:inline-block;margin-top:18px;padding:6px 18px;font-size:21px;font-weight:600;border-radius:99px;color:#06203f;background:var(--code)}
+.step.jev .tag{background:var(--jev)} .step.llm .tag{background:var(--llm);color:#2a1a00}
+.step p{margin-top:22px;font-size:24px;line-height:1.3}
+.tally{display:grid;grid-template-columns:repeat(3,1fr);gap:56px;margin-top:72px}
+.tally div{display:flex;align-items:center;gap:26px}
+.tally b{font-family:var(--display);font-size:160px;font-weight:700;letter-spacing:-.04em;line-height:.9}
+.tally span{font-size:30px;line-height:1.3;color:var(--ink-2)}
+
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:60px}
+.tile{padding:40px 50px 46px;background:var(--panel);clip-path:var(--slant)}
+.tile b{display:block;font-family:var(--display);font-size:48px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+.tile span{display:block;margin-top:14px;font-size:27px;line-height:1.35;color:var(--ink-2)}
+.tile code{font-family:var(--mono);font-size:25px;color:var(--c2)}
+.punch{margin-top:60px;font-family:var(--display);font-size:50px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+.punch em{font-style:normal;color:var(--c2)}
+
+/* barras de preço */
+.bars{margin-top:44px;display:grid;gap:22px}
+.bar-row{display:grid;grid-template-columns:250px 1fr 260px;align-items:center;gap:28px}
+.bar-row .nm{font-size:31px;color:var(--ink-2)}
+.bar-row .track{display:flex;align-items:center;gap:20px;height:62px}
+.bar-row .fill{height:100%;min-width:8px;background:rgba(169,195,234,.34)}
+.bar-row .val{font-family:var(--mono);font-size:31px;color:var(--ink);white-space:nowrap}
+.bar-row .out{font-family:var(--mono);font-size:27px;color:var(--ink-3);text-align:right}
+.bar-row.jev .nm{color:var(--ink);font-weight:600}
+.bar-row.jev .fill{background:var(--jev)}
+.bar-row.jev .val,.bar-row.jev .out{color:var(--jev)}
+.bars-head{display:grid;grid-template-columns:250px 1fr 260px;gap:28px;margin-top:52px;font-family:var(--mono);font-size:21px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.bars-head span:last-child{text-align:right}
+.bars-head + .bars{margin-top:18px}
+
+/* padrões */
+.pat{display:inline-block;font-family:var(--mono);font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:var(--c2);margin-bottom:18px}
+.proj{position:absolute;left:160px;right:160px;bottom:118px;display:flex;align-items:center;gap:30px;padding:22px 44px;background:var(--panel);clip-path:var(--slant);font-size:26px;color:var(--ink)}
+.proj b{flex:none;font-family:var(--mono);font-size:19px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--c2)}
+.proj code{font-family:var(--mono);font-size:24px;color:var(--c2)}
+.fan{display:grid;grid-template-columns:320px 60px 1fr 60px 420px;align-items:center;margin-top:52px}
+.fan .node{min-height:170px}
+.fan-group{border:2px dashed rgba(16,212,252,.5);padding:24px 32px 22px}
+.fan-group small{display:block;font-family:var(--mono);font-size:21px;color:var(--c2);margin-bottom:12px}
+.qchip{display:grid;grid-template-columns:96px 1fr;gap:18px;align-items:center;padding:14px 0;border-top:1px solid var(--line);font-size:30px;color:var(--ink)}
+.qchip:first-of-type{border-top:0}
+.qchip i{font-style:normal;font-family:var(--mono);font-size:23px;color:var(--c2)}
+.qchip.spec{color:var(--ink-3)}
+.conf{margin-top:96px;position:relative}
+.conf-bar{display:grid;grid-template-columns:60fr 25fr 15fr;gap:6px;height:110px}
+.conf-bar i{display:block}
+.conf-bar i:nth-child(1){background:var(--human);clip-path:polygon(14px 0,100% 0,100% 100%,0 100%)}
+.conf-bar i:nth-child(2){background:var(--llm)}
+.conf-bar i:nth-child(3){background:var(--jev);clip-path:polygon(0 0,100% 0,calc(100% - 14px) 100%,0 100%)}
+.conf-ticks{position:relative;height:44px;margin-top:14px;font-family:var(--mono);font-size:30px;color:var(--ink-2)}
+.conf-ticks span{position:absolute;transform:translateX(-50%)}
+.conf-zones{display:grid;grid-template-columns:60fr 25fr 15fr;gap:6px;margin-top:44px}
+.zone h3{font-size:64px}
+.zone p{margin-top:14px;font-size:29px;line-height:1.3;padding-right:20px}
+.stack{display:grid;grid-template-columns:45fr 30fr 25fr;gap:6px;margin-top:60px;height:200px}
+.stack div{display:flex;flex-direction:column;justify-content:center;padding:0 34px;color:#06203f}
+.stack div:nth-child(1){background:var(--jev);clip-path:polygon(22px 0,100% 0,100% 100%,0 100%)}
+.stack div:nth-child(2){background:#6fb6ff}
+.stack div:nth-child(3){background:var(--code);clip-path:polygon(0 0,100% 0,calc(100% - 22px) 100%,0 100%)}
+.stack b{font-family:var(--display);font-size:92px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.stack span{font-size:28px;font-weight:500;margin-top:8px}
+.code-line{margin-top:44px;font-family:var(--mono);font-size:27px;color:var(--ink);background:var(--panel);padding:24px 32px;border-left:6px solid var(--c2);white-space:pre}
+.code-line .k{color:var(--c2)}
+
+/* colunas */
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:64px;margin-top:96px}
+.col h3{padding-top:28px;border-top:6px solid var(--b2);font-size:48px}
+.col p{margin-top:20px;font-size:31px;line-height:1.4}
+.col .go{margin-top:26px;font-family:var(--mono);font-size:27px;color:var(--c2)}
+
+/* para levar */
+ol{list-style:none;counter-reset:n;margin:56px 0 0;padding:0}
+ol li{counter-increment:n;position:relative;padding:40px 0 40px 120px;border-top:1px solid var(--line);font-family:var(--display);font-size:56px;font-weight:600;letter-spacing:-.02em;line-height:1.15;color:var(--ink)}
+ol li::before{content:counter(n,decimal-leading-zero);position:absolute;left:0;top:56px;font-family:var(--mono);font-size:30px;font-weight:500;color:var(--c1)}
+ol li small{display:block;font-family:var(--body);font-weight:400;font-size:29px;letter-spacing:0;color:var(--ink-3);margin-top:12px}
+
+/* fechamento */
+.final .shape{right:-160px;top:-100px;width:900px;height:1300px;clip-path:polygon(34% 0,100% 0,66% 100%,0 100%)}
+.final{padding-top:100px}
+.final .brand{margin-bottom:56px}
+.final h1{position:relative;font-size:112px;max-width:1150px;line-height:1.0}
+.chips{position:relative;display:flex;gap:16px;margin-top:44px}
+.chips .own{height:64px;font-size:28px;padding:0 34px}
+.final blockquote{position:relative;margin-top:48px;font-size:38px;max-width:900px}
+.me{position:absolute;left:160px;bottom:70px;display:flex;align-items:center;gap:22px;font-size:26px;color:var(--ink)}
+.me img{width:76px;height:76px;border-radius:50%;object-fit:cover;border:3px solid var(--c2)}
+.me span{display:block;font-family:var(--mono);font-size:20px;color:var(--ink-3);margin-top:4px}
+
+/* notas */
+.note{display:none}
+.notes-panel{position:fixed;left:0;right:0;bottom:0;background:rgba(4,15,38,.97);color:#fff;padding:18px 32px 22px;font-size:18px;line-height:1.5;border-top:2px solid var(--c1);display:none;max-height:26vh;overflow:auto;font-family:var(--body)}
+.notes-panel.on{display:block}
+.notes-panel b{color:var(--c2);font-weight:600}
+
+/* extras do deck do Data Intake Validator (além do modelo) */
+.cgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:52px}
+.cg{padding:18px 24px 16px;background:var(--panel);font-family:var(--mono);font-size:26px;color:var(--ink);border-left:4px solid var(--c2)}
+.cg span{display:block;margin-top:6px;font-size:19px;color:var(--ink-3)}
+.cg.dec{border-left-color:var(--llm)}
+.verdicts{margin-top:64px}
+.own.no{background:#ff8b8b;color:#3a0a0a}
+.tbl{width:100%;border-collapse:collapse;margin-top:52px;font-size:29px}
+.tbl th{font-family:var(--mono);font-size:20px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:14px 22px;border-bottom:2px solid var(--line);font-weight:500}
+.tbl td{padding:22px;border-bottom:1px solid var(--line);color:var(--ink-2);line-height:1.3;vertical-align:middle}
+.tbl td:first-child{font-family:var(--mono);font-size:26px;color:var(--ink)}
+.tbl td.ok{color:var(--jev);font-family:var(--mono);font-weight:500}
+.tbl td.no{color:#ff8b8b;font-family:var(--mono);font-weight:500}
+.wide-cols{grid-template-columns:1fr 1fr}
+.cover-who{grid-template-columns:1fr;margin-left:480px}
+.cg:last-child{grid-column:1 / -1}
+.talk.wide{max-width:1300px}
+.final h1{font-size:96px}
+.lead.ask{margin-top:56px;font-size:32px;color:var(--ink-2);max-width:900px}
+.mini{font-family:var(--mono);font-size:22px;color:var(--ink-3);margin-top:44px}
+</style>
+</head>
+<body>
+<div class="viewport">
+<div class="stage" id="stage">
+
+<div class="brand stage-brand"><span>Data Intake Validator</span></div>
+
+<!-- 01. Abertura -->
+<section class="slide cover intro" data-section="">
+  <div class="shape"></div>
+  <div class="who cover-who">
+    <div>
+      <div class="brand big"><span>Live · Engenharia de Dados</span></div>
+      <p class="kicker">Data Intake Validator</p>
+      <h1>Uma planilha só entra<br>se cumprir o contrato.</h1>
+      <p class="role">Validação → Ingestão → Bronze → Silver → Gold</p>
+      <div class="talk wide">
+        <small>A tese da live</small>
+        <b>A IA reduz o trabalho de implementação, mas não substitui a definição das regras.</b>
+      </div>
+    </div>
+  </div>
+  <div class="hint">→ avança · F tela cheia · N notas</div>
+</section>
+
+<!-- 02. Quem sou eu -->
+<section class="slide" data-section="Quem sou eu">
+  <p class="kicker">Quem sou eu</p>
+  <div style="display:flex;gap:80px;align-items:center;margin-top:20px">
+    
+    <div>
+      <h2 style="font-size:96px;line-height:1">Jennifer Maia</h2>
+      <p class="lead" style="margin-top:18px">Analytics Engineer Jr. · indo para Engenharia de Dados</p>
+      <div style="display:flex;gap:80px;margin-top:44px">
+        <div class="stat"><b>10% → 48%</b><span>relatórios migrados do legado para o lake, em 1 ano</span></div>
+        <div class="stat"><b>130+</b><span>pessoas treinadas com apoio direto</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="tl-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:48px;margin-top:70px">
+    <div class="tl"><i>2024</i><b>Entrada em BI</b><span>SQL, consultas e relatórios</span></div>
+    <div class="tl"><i>depois</i><b>Área de Analytics</b><span>padrões e modelos da área</span></div>
+    <div class="tl"><i>hoje</i><b>Databricks e IA</b><span>Claude Code e Genie Code no fluxo</span></div>
+    <div class="tl key"><i>próximo</i><b>Engenharia de Dados</b><span>pipelines e arquiteturas</span></div>
+  </div>
+</section>
+<!-- 03. Gancho -->
+<section class="slide center" data-section="A pergunta">
+  <p class="kicker">Antes de tudo</p>
+  <h1>Quantas planilhas erradas<br>já entraram no seu pipeline?</h1>
+  <p class="lead">Uma só basta para o relatório do mês estar errado, e ninguém saber por quê.</p>
+</section>
+
+<!-- 04. Por que esse projeto -->
+<section class="slide" data-section="Por que esse projeto">
+  <p class="kicker">Por que esse projeto</p>
+  <h2>A planilha é a mesma.<br>Muda quando o erro aparece.</h2>
+  <p class="mini" style="margin-top:30px">Antes: o tratamento fica no Power BI, e o erro aparece horas depois, no relatório.</p>
+  <div class="flow" style="margin-top:20px">
+    <div class="node">Planilha<span>de cada parceiro</span></div>
+    <div class="arrow"></div>
+    <div class="node">Power BI<span>trata e atualiza: horas</span></div>
+    <div class="arrow"></div>
+    <div class="node">Erro<span>quebra no meio do caminho</span></div>
+  </div>
+  <p class="mini" style="margin-top:30px">Depois: o arquivo é validado na hora do envio, e quem enviou sabe no mesmo minuto.</p>
+  <div class="flow" style="margin-top:20px">
+    <div class="node">Planilha<span>envio único</span></div>
+    <div class="arrow"></div>
+    <div class="node hot">App<span>valida na hora</span></div>
+    <div class="arrow"></div>
+    <div class="node cool">Lakehouse<span>só entra o aprovado</span></div>
+  </div>
+  <p class="punch" style="margin-top:6px;font-size:42px"><svg viewBox="0 0 48 48" width="56" height="56" fill="none" stroke="#10d4fc" stroke-width="3" stroke-linejoin="round" aria-hidden="true"><path d="M8 44V12l16-8 16 8v32"/><path d="M18 44V30h12v14"/></svg> <em>Só entra quem está na lista.</em></p>
+</section>
+<!-- 05. Outras formas de resolver -->
+<section class="slide" data-section="Outras formas de resolver">
+  <p class="kicker">Outras formas de resolver</p>
+  <h2>Dá para resolver de outros jeitos.</h2>
+  <table class="tbl" style="margin-top:36px;font-size:26px">
+    <tr><th>Alternativa</th><th>Quando o erro aparece</th><th>Quando faz sentido</th></tr>
+    <tr><td>Power BI lendo uma pasta</td><td>Na atualização, horas depois</td><td>Relatório simples, um arquivo fixo</td></tr>
+    <tr><td>Databricks nativo (leitura de Excel e conector de SharePoint)</td><td>No job, quem opera recebe o erro</td><td>Pipeline de engenharia já existente</td></tr>
+    <tr><td>Ferramenta de ingestão (ADF, Fivetran e similares)</td><td>No pipeline, com o dado já dentro</td><td>Fonte que é um sistema, não uma planilha</td></tr>
+    <tr><td>Contrato em código (expectations, Great Expectations, Pandera)</td><td>No pipeline, depois da ingestão</td><td>Dado que já chegou em tabela</td></tr>
+    <tr class="ok"><td><b>Validação antes da ingestão (esta demo)</b></td><td><b>Na hora do envio, para quem enviou</b></td><td><b>Planilha de fora, em que o erro precisa de dono</b></td></tr>
+  </table>
+</section>
+<!-- 06. Problema -->
+<section class="slide" data-section="O problema">
+  <p class="kicker">O problema</p>
+  <h2>Cada área manda a planilha do seu jeito.</h2>
+  <div class="tiles">
+    <div class="tile"><b>Coluna renomeada</b><span>A área trocou o nome de uma coluna obrigatória.</span><span><code>data_venda</code> virou <code>dt_venda</code></span></div>
+    <div class="tile"><b>Número como texto</b><span>O valor chegou no formato de quem digitou.</span><span><code>"1.299,90"</code> numa coluna de número</span></div>
+    <div class="tile"><b>Campo sem valor</b><span>Uma célula vazia ou uma sigla entrou no lugar de um número.</span><span><code>"N/A"</code> na quantidade</span></div>
+  </div>
+  <p class="punch">O pipeline quebra. Ou, pior, <em>passa dado errado sem avisar.</em></p>
+</section>
+
+<!-- 07. Solução -->
+<section class="slide" data-section="A solução">
+  <p class="kicker">A solução</p>
+  <h2>Validar antes de ingerir. Nunca depois.</h2>
+  <div class="flow">
+    <div class="node">Usuário<span>envia a planilha</span></div>
+    <div class="arrow"></div>
+    <div class="node hot">Validação<span>julga contra o contrato</span></div>
+    <div class="arrow"></div>
+    <div class="node">Ingestão<span>só entra o aprovado</span></div>
+    <div class="arrow"></div>
+    <div class="node cool">Bronze<span>o dado como chegou</span></div>
+    <div class="arrow"></div>
+    <div class="node cool">Silver<span>tipos e padronização</span></div>
+    <div class="arrow"></div>
+    <div class="node cool">Gold<span>pronto para consumo</span></div>
+  </div>
+  <p class="lead" style="margin-top:84px">Rejeitado não passa da Validação. Não existe ingestão parcial.</p>
+</section>
+
+<!-- 08. Databricks Apps -->
+<section class="slide" data-section="Databricks Apps">
+  <p class="kicker">Databricks Apps</p>
+  <h2>Um app web dentro da workspace.<br>Mesmo login, mesmos dados.</h2>
+  <div class="flow" style="margin-top:44px">
+    <div class="node">Navegador<span>usuário logado</span></div>
+    <div class="arrow"></div>
+    <div class="node hot">Databricks App<span>Streamlit, Dash ou similares</span></div>
+    <div class="arrow"></div>
+    <div class="node cool">Unity Catalog<span>Volumes e tabelas</span></div>
+  </div>
+  <div class="cols wide-cols" style="margin-top:72px">
+    <div class="col"><h3>Vantagens</h3><p>Dado e app no mesmo lugar.<br>Identidade e permissão já integradas.<br>Deploy pela CLI, sem infraestrutura própria.</p></div>
+    <div class="col"><h3>Cuidados</h3><p>Free Edition: até 3 apps por conta.<br>Free Edition: o app para sozinho após 24 horas.<br>Plano pago: cobrança por hora de compute enquanto o app roda.<br>Limites exatos: página Resource limits do workspace.</p></div>
+  </div>
+</section>
+<!-- 09. Requisitos para começar -->
+<section class="slide" data-section="Requisitos">
+  <p class="kicker">Requisitos para começar</p>
+  <h2>Para acompanhar, você precisa de:</h2>
+  <table class="tbl">
+    <tr><th>Requisito</th><th>Neste ambiente</th></tr>
+    <tr><td>Python, com pandas, openpyxl e o SDK do Databricks</td><td class="ok">já configurado</td></tr>
+    <tr><td>Claude Code</td><td class="ok">já configurado</td></tr>
+    <tr><td>Databricks CLI autenticado no seu workspace</td><td class="ok">já configurado</td></tr>
+    <tr><td>Databricks AI Dev Kit (skills instaladas pela CLI)</td><td class="ok">já configurado</td></tr>
+    <tr><td>Workspace com Databricks Apps habilitado (Free Edition ou plano pago) e um SQL Warehouse</td><td class="ok">já configurado</td></tr>
+  </table>
+  <p class="mini" style="margin-top:44px">Quer montar do zero? As lives completas de setup estão no canal da Jornada de Dados.</p>
+</section>
+<!-- 10. Contrato da demo -->
+<section class="slide" data-section="Contrato da demo">
+  <p class="kicker">Contrato da demo</p>
+  <p style="margin-top:8px"><svg viewBox="0 0 48 48" width="56" height="56" fill="none" stroke="#10d4fc" stroke-width="3" stroke-linejoin="round" aria-hidden="true"><path d="M8 44V12l16-8 16 8v32"/><path d="M18 44V30h12v14"/></svg></p>
+  <h2>O que esta demo entrega, o que não entrega,<br>e onde ela pode evoluir.</h2>
+  <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:48px;margin-top:24px">
+  <div>
+    <p class="mini" style="color:var(--c2);margin:0 0 18px;letter-spacing:.12em">ENTREGO · O QUE VOCÊ VAI VER FUNCIONAR</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div style="background:var(--panel);border-left:6px solid var(--c2);padding:14px 20px"><b style="display:block;font-family:var(--display);font-size:28px;color:var(--ink);line-height:1.1">Validação de 13 colunas</b><span style="display:block;font-size:21px;line-height:1.3;color:var(--ink-2);margin-top:6px">Cada arquivo é julgado contra o contrato, coluna por coluna. Nada é corrigido em silêncio.</span></div>
+<div style="background:var(--panel);border-left:6px solid var(--c2);padding:14px 20px"><b style="display:block;font-family:var(--display);font-size:28px;color:var(--ink);line-height:1.1">Veredito sem meio-termo</b><span style="display:block;font-size:21px;line-height:1.3;color:var(--ink-2);margin-top:6px"><code>READY FOR INGESTION</code> ou <code>FILE REJECTED</code>. Rejeitado não entra, nem parcialmente.</span></div>
+<div style="background:var(--panel);border-left:6px solid var(--c2);padding:14px 20px"><b style="display:block;font-family:var(--display);font-size:28px;color:var(--ink);line-height:1.1">Diagnóstico que explica</b><span style="display:block;font-size:21px;line-height:1.3;color:var(--ink-2);margin-top:6px">Diz o problema, a linha e, quando há uma correspondência provável, a sugestão. Você decide.</span></div>
+<div style="background:var(--panel);border-left:6px solid var(--c2);padding:14px 20px"><b style="display:block;font-family:var(--display);font-size:28px;color:var(--ink);line-height:1.1">App no Databricks</b><span style="display:block;font-size:21px;line-height:1.3;color:var(--ink-2);margin-top:6px">Upload, diagnóstico e envio ao Volume numa tela só, sem terminal.</span></div>
+<div style="background:var(--panel);border-left:6px solid var(--c2);padding:14px 20px"><b style="display:block;font-family:var(--display);font-size:28px;color:var(--ink);line-height:1.1">Ponte até o Lakehouse</b><span style="display:block;font-size:21px;line-height:1.3;color:var(--ink-2);margin-top:6px">O arquivo aprovado vira CSV no Volume e chega à Bronze com metadados da execução.</span></div>
+<div style="background:var(--panel);border-left:6px solid var(--c2);padding:14px 20px"><b style="display:block;font-family:var(--display);font-size:28px;color:var(--ink);line-height:1.1">Bronze, Silver e Gold</b><span style="display:block;font-size:21px;line-height:1.3;color:var(--ink-2);margin-top:6px">O dado como chegou, tipos corretos e uma tabela pronta para perguntas de negócio.</span></div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:22px">
+<div style="border:2px solid var(--line);padding:22px 26px"><b style="display:block;font-family:var(--display);font-size:32px;color:var(--ink)">Não entrego, de propósito</b><p style="margin-top:10px;font-size:24px;line-height:1.5;color:var(--ink-2)">Autenticação e permissões · histórico de envios · notificações · detecção de duplicidade entre arquivos (decisão 6.9)</p></div>
+<div style="border:2px solid var(--line);padding:22px 26px"><b style="display:block;font-family:var(--display);font-size:32px;color:var(--ink)">Como evolui</b><p style="margin-top:10px;font-size:24px;line-height:1.5;color:var(--ink-2)">Vários clientes, cada um com seu mapeamento · auditoria e destino duplo · Genie Agent e dashboard sobre a Gold</p></div>
+  </div>
+</div>
+</section>
+<!-- 11. Decisões (cena ao vivo) -->
+<section class="slide" data-section="As decisões">
+  <p class="kicker">As decisões</p>
+  <h2>A IA levanta as ambiguidades.<br>Uma pessoa decide cada uma.</h2>
+  <div class="cols wide-cols">
+    <div class="col"><h3>A IA</h3><p>Lê a especificação inteira e lista o que não está decidido, com uma recomendação para cada ponto.</p><div class="go">levanta, não decide</div></div>
+    <div class="col"><h3>Você</h3><p>Decide em voz alta, explica o porquê e confere o registro depois.</p><div class="go">decisões em docs/decisoes.md</div></div>
+  </div>
+</section>
+
+<!-- 12. Contrato -->
+<section class="slide" data-section="O contrato">
+  <p class="kicker">O contrato</p>
+  <h2>Treze colunas. Um veredito, sem meio-termo.</h2>
+  <div class="cgrid">
+    <div class="cg">id_venda<span>integer</span></div>
+    <div class="cg">data_venda<span>date</span></div>
+    <div class="cg">id_cliente<span>integer</span></div>
+    <div class="cg">cliente<span>string</span></div>
+    <div class="cg">cidade<span>string</span></div>
+    <div class="cg">estado<span>string · 27 UFs</span></div>
+    <div class="cg">produto<span>string</span></div>
+    <div class="cg">categoria<span>string</span></div>
+    <div class="cg">quantidade<span>integer</span></div>
+    <div class="cg dec">valor_unitario<span>decimal</span></div>
+    <div class="cg dec">desconto<span>decimal · fração 0–1</span></div>
+    <div class="cg">vendedor<span>string</span></div>
+    <div class="cg">canal_venda<span>string</span></div>
+  </div>
+  <div class="chips verdicts">
+    <span class="own jev">READY FOR INGESTION</span>
+    <span class="own no">FILE REJECTED</span>
+  </div>
+</section>
+
+<!-- 13. Os cinco arquivos -->
+<section class="slide" data-section="A validação">
+  <p class="kicker">A validação</p>
+  <h2>Cinco arquivos. Dois passam, três param, cada um por um motivo.</h2>
+  <table class="tbl">
+    <thead><tr><th>Arquivo</th><th>O defeito</th><th>Veredito</th></tr></thead>
+    <tbody>
+      <tr><td>vendas_valido</td><td>nenhum</td><td class="ok">aprovado</td></tr>
+      <tr><td>vendas_data_texto</td><td>data como texto <code>yyyy-MM-dd</code>, forma aceita pelo contrato</td><td class="ok">aprovado</td></tr>
+      <tr><td>vendas_coluna_ausente</td><td><code>data_venda</code> renomeada para <code>dt_venda</code></td><td class="no">rejeitado</td></tr>
+      <tr><td>vendas_tipo_invalido</td><td>5 de 1000 linhas com texto onde deveria haver número</td><td class="no">rejeitado</td></tr>
+      <tr><td>vendas_coluna_extra</td><td>coluna <code>observacao_interna</code> fora do contrato</td><td class="no">rejeitado</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 14. Separação -->
+<section class="slide" data-section="A validação">
+  <p class="kicker">A separação</p>
+  <h2>O App só mostra. A regra mora no módulo.</h2>
+  <div class="flow">
+    <div class="node">App<span>Streamlit: upload e tela</span></div>
+    <div class="arrow"></div>
+    <div class="node hot">Validação<span>Python puro, sem Streamlit</span></div>
+    <div class="arrow"></div>
+    <div class="node">Resultado<span>o diagnóstico</span></div>
+    <div class="arrow"></div>
+    <div class="node">Ingestão<span>quem consome o veredito</span></div>
+  </div>
+  <div class="code-line" style="margin-top:84px"><span class="k">validator/contrato.py</span>   declara: colunas, tipos, domínios, regras. Zero lógica
+<span class="k">validator/validador.py</span>   aplica: lê o arquivo, percorre, monta o diagnóstico
+<span class="k">validator/__init__.py</span>    a única porta de entrada</div>
+</section>
+
+<!-- 15. Demo -->
+<section class="slide" data-section="A demo">
+  <p class="kicker">A demo</p>
+  <h2>Três coisas para olhar, nesta ordem.</h2>
+  <ol>
+    <li>A tela julga os cinco arquivos<small>Dois sobem. Três param, cada um com o diagnóstico exato.</small></li>
+    <li>O Volume confirma o que chegou<small>Só os dois aprovados estão em <span class="mono">raw/entrada</span>.</small></li>
+    <li>A consulta responde a pergunta<small>A gold: um produto por linha, faturamento em ordem decrescente.</small></li>
+  </ol>
+</section>
+
+<!-- 16. Lakehouse -->
+<section class="slide" data-section="O Lakehouse">
+  <p class="kicker">O Lakehouse</p>
+  <h2>Bronze guarda o que chegou. Silver tipa. Gold responde.</h2>
+  <div class="map">
+    <div class="step"><i>camada 1</i><b>bronze.vendas</b><span class="tag">sem regra de negócio</span><p>O dado como chegou, com timestamp de ingestão, arquivo de origem e id da execução.</p></div>
+    <div class="arrow"></div>
+    <div class="step jev"><i>camada 2</i><b>silver.vendas</b><span class="tag">tipos</span><p>Tipos corretos, texto padronizado e nulos tratados. Nenhuma regra nova.</p></div>
+    <div class="arrow"></div>
+    <div class="step"><i>camada 3</i><b>gold.vendas_por_produto</b><span class="tag">consumo</span><p>Uma linha por produto: faturamento, quantidade, desconto médio e ticket médio.</p></div>
+  </div>
+  <p class="lead" style="margin-top:84px">A Bronze só recebe o que a validação aprovou. A Silver não inventa regra de negócio.</p>
+</section>
+
+<!-- 17. Fecho -->
+<section class="slide cover final" data-section="Para levar">
+  <div class="shape"></div>
+  <p class="kicker">Para levar</p>
+  <h1>A IA reduz o trabalho de implementação, mas não substitui a definição das regras.</h1>
+  <blockquote>É por isso que este projeto começou por um contrato, não por código.</blockquote>
+  <p class="lead ask">Ficou de fora, de propósito: autenticação, histórico de uploads, auto-correção, múltiplos formatos, versionamento de schema e notificações.</p>
+</section>
+
+<!-- 18. Opcional -->
+<section class="slide" data-section="Opcional">
+  <p class="kicker">Próximo passo · opcional</p>
+  <h2>A gold já é a base de consumo.</h2>
+  <div class="tiles">
+    <div class="tile"><b>Genie Agent</b><span>Responde perguntas em linguagem natural sobre <code>gold.vendas_por_produto</code>.</span></div>
+    <div class="tile"><b>Dashboard AI/BI</b><span>Faturamento, ticket médio e desconto por produto, sem SQL para quem consome.</span></div>
+    <div class="tile"><b>Prompt pronto</b><span><code>docs/prompts/extensao-genie-dashboard.md</code></span></div>
+  </div>
+  <p class="mini">Não é demo da live. Use só se sobrar tempo ou se alguém perguntar.</p>
+</section>
+
+<!-- 19. Agradecimento -->
+<section class="slide cover final" data-section="Obrigada">
+  <div class="shape"></div>
+  <div class="who cover-who">
+    
+    <div>
+      <p class="kicker">Obrigada</p>
+      <h1 style="font-size:72px">Obrigada por<br>chegar até aqui.</h1>
+      <div class="talk wide">
+        <small>Onde me encontrar</small>
+        <b style="font-size:34px">linkedin.com/in/jennifer-n-maia</b>
+        <p>github.com/Jennifer-Maia/data-intake-validator</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<div class="hud"><span id="section"></span><span id="counter"></span></div>
+<div class="progress" id="progress"></div>
+</div>
+</div>
+
+<aside class="notes-panel" id="notes"></aside>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var stage = document.getElementById('stage');
+  var counter = document.getElementById('counter');
+  var progress = document.getElementById('progress');
+  var section = document.getElementById('section');
+  var notes = document.getElementById('notes');
+  var i = 0;
+
+  var viewport = document.querySelector('.viewport');
+  function fit(){
+    viewport.style.bottom = notes.classList.contains('on') ? notes.offsetHeight + 'px' : '0';
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    var s = Math.min(w / 1920, h / 1080);
+    stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+  function pad(n){ return (n < 10 ? '0' : '') + n; }
+  function go(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('active', k === i); });
+    counter.textContent = pad(i + 1) + ' / ' + pad(slides.length);
+    progress.style.width = ((i + 1) / slides.length * 100) + '%';
+    section.textContent = slides[i].getAttribute('data-section') || '';
+    stage.classList.toggle('no-brand', slides[i].classList.contains('cover'));
+    var note = slides[i].querySelector('.note');
+    notes.innerHTML = note ? note.innerHTML : '';
+    if (history.replaceState) history.replaceState(null, '', '#' + (i + 1));
+  }
+  function fromHash(){
+    var n = parseInt((location.hash || '').replace('#', ''), 10);
+    return isNaN(n) ? 0 : n - 1;
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case 'PageDown': case ' ': case 'Enter': e.preventDefault(); go(i + 1); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': case 'Backspace': e.preventDefault(); go(i - 1); break;
+      case 'Home': e.preventDefault(); go(0); break;
+      case 'End': e.preventDefault(); go(slides.length - 1); break;
+      case 'f': case 'F':
+        if (document.fullscreenElement) { document.exitFullscreen && document.exitFullscreen(); }
+        else if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); }
+        break;
+      case 'n': case 'N': notes.classList.toggle('on'); fit(); break;
+    }
+  });
+  document.addEventListener('click', function(e){
+    if (e.target.closest('a, .notes-panel')) return;
+    if (e.clientX < window.innerWidth * 0.18) go(i - 1); else go(i + 1);
+  });
+  var touchX = null;
+  document.addEventListener('touchstart', function(e){ touchX = e.changedTouches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    if (touchX === null) return;
+    var dx = e.changedTouches[0].clientX - touchX; touchX = null;
+    if (Math.abs(dx) > 50) go(dx < 0 ? i + 1 : i - 1);
+  }, {passive:true});
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function(){ go(fromHash()); });
+
+  fit();
+  go(fromHash());
+})();
+</script>
+</body>
+</html>
